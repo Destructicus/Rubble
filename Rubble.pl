@@ -995,8 +995,32 @@ sub GetFort {
 # ClearRubble
 #
 # This command clears rubble from the castle
+# Returns 1 if some Rubble was cleared, 0 if Rubble could not be cleared.
 sub ClearRubble {
 	# This command mobilizes the peasantry to clear rubble from the castle.
+	# Peasants will attempt to clear Rubble.  If Rubble remains, gold is spent to continue
+	# hiring peasants to remove the rubble until the rubble is removed entirely or the 
+	# gold runs out.
+
+	# Initialize sub variables
+	my $CR_TempString = "\$".$Attacker."_Assets{gold}";
+	my $CR_Gold = eval $CR_TempString;
+	my $CR_TempString = "\$".$Attacker."_Assets{peasants}";
+	my $CR_Peasants = eval $CR_TempString;
+	my $CR_TempString = "\$".$Attacker."_Rubble";
+	my $CR_Rubble = eval $CR_TempString;
+
+	# Check to see if sub needs to be run (Is there Rubble to remove?)
+	if ($CR_Rubble < 1) {
+		return 0;
+	}
+
+	# Peasants work first round for free
+	my $CR_PeasantSuccess = (int(rand(30) + 10) / 500);
+	# print "\nPeasantSuccess = ", $CR_PeasantSuccess, "\n";
+	my $CR_RubbleRemoved = $CR_PeasantSuccess * $CR_Peasants;
+	if ($CR_RubbleRemoved > $CR_Rubble) {}
+	
 }
 
 # SendAssassins
