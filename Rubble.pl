@@ -9,6 +9,7 @@ use Time::HiRes;
 
 my $InitialMenuInput = 0;
 my $MainMenuResult = 0;
+my $InputIsValid = 0;
 
 my $Player1_Name = "";
 my $Player2_Name = "";
@@ -1328,29 +1329,39 @@ sub SelectPlayers {
 sub Main {
 	Resource_Initializer;
 	for ($round_cnt = 100; $round_cnt>=1; $round_cnt--) {
-		# Player takes turn
-		# Loop to verify user input
+		# Generate Random Weather
 		RainMaker;
-		my $InputIsValid = 0;
-		$Message = MotivateMessage();
-		while ($InputIsValid < 1) {
-			$InputIsValid = VerifyAction(TurnMenu);
-			$Message = "Err... I did not understand that command, sire.";
-			if ($InputIsValid == 1) {
-				my $SubName = $ActionSubs{$UserIntInput};
-				# Runs the sub as specified by the user input	
-				$SuccessfulSub = eval $SubName;
-				# Check to see if sub was successful
-				if ($SuccessfulSub == 0) {
-					$InputIsValid = 0;
+		# Check to see if player is human or AI, and decide action accordingly.
+		if ($Player1_Type == "h") {
+			$InputIsValid = 0;
+			$Message = MotivateMessage();
+			while ($InputIsValid < 1) {
+				$InputIsValid = VerifyAction(TurnMenu);
+				$Message = "Err... I did not understand that command, sire.";
+				if ($InputIsValid == 1) {
+					my $SubName = $ActionSubs{$UserIntInput};
+					# Runs the sub as specified by the user input	
+					$SuccessfulSub = eval $SubName;
+					# Check to see if sub was successful
+					if ($SuccessfulSub == 0) {
+						$InputIsValid = 0;
+					}
+					elsif ($SuccessfulSub == 2) {
+						$Player1Win = 1;
+					}
 				}
-				elsif ($SuccessfulSub == 2) {
-					$Player1Win = 1;
-				}
+			};
+		}
+		else {
+			$SuccessfulSub = AI_Move();
+			if ($SuccessfulSub == 2) {
+				$Player1Win = 1;
 			}
-		};
-		
-		# Check to see if the Player's action defeated the computer
+			
+		}
+
+	
+		# Check to see if Player 1's action defeated Player 2
 		if ($Player1Win == 1 ) {
 			print "King ", $Player2_Name, " has been defeated!\n\n";
 			return 0;
@@ -1365,24 +1376,33 @@ sub Main {
 		# Computer takes turn
 		$InputIsValid = 0;
 
-		while ($InputIsValid < 1) {
-			my $Player2_Action = int(rand(14) + 1);
-			print "Randomly generated action: ", $Player2_Action, "\n";
-			$InputIsValid = VerifyAction($Player2_Action);
-			if ($InputIsValid == 1) {
-				print "Computer elects to: ", $ActionSubs{$Player2_Action}, "\n";
-				# Runs the sub as specified by the AI Algorithm	
-				$SuccessfulSub = eval $ActionSubs{$Player2_Action};
-				# Check to see if sub was able to be ran
-				print $SuccessfulSub, " is the SuccessfulSub val.\n";
-				if ($SuccessfulSub == 0) {
-					$InputIsValid = 0;
+		if ($Player2_Type == "h") {
+			$InputIsValid = 0;
+			$Message = MotivateMessage();
+			while ($InputIsValid < 1) {
+				$InputIsValid = VerifyAction(TurnMenu);
+				$Message = "Err... I did not understand that command, sire.";
+				if ($InputIsValid == 1) {
+					my $SubName = $ActionSubs{$UserIntInput};
+					# Runs the sub as specified by the user input	
+					$SuccessfulSub = eval $SubName;
+					# Check to see if sub was successful
+					if ($SuccessfulSub == 0) {
+						$InputIsValid = 0;
+					}
+					elsif ($SuccessfulSub == 2) {
+						$Player2Win = 1;
+					}
 				}
-				elsif ($SuccessfulSub == 2) {
-					$Player2Win = 1;
-				}
+			};
+		}
+		else {
+			print "Player 2 is a computer\n";
+			$SuccessfulSub = AI_Move();
+			if ($SuccessfulSub == 2) {
+				$Player2Win = 1;
 			}
-		};
+		}
 		# Check to see if the computer's action defeated the player	
 		if ($Player2Win == 1 ) {
 			print "King ", $Player1_Name, " has been defeated!\n\n";
@@ -1404,6 +1424,31 @@ sub Main {
 		print "will restore prosperity to the kingdom.\n"
 	}
 }
+
+# AI_Move
+#
+# Calculates the move to be taken by the AI
+sub AI_Move {
+	while ($InputIsValid < 1) {
+		my $AI_Action = int(rand(14) + 1);
+		print "Randomly generated action: ", $AI_Action, "\n";
+		$InputIsValid = VerifyAction($AI_Action);
+		if ($InputIsValid == 1) {
+			print "Computer elects to: ", $ActionSubs{$AI_Action}, "\n";
+			# Runs the sub as specified by the AI Algorithm	
+			$SuccessfulSub = eval $ActionSubs{$AI_Action};
+			# Check to see if sub was able to be ran
+			print $SuccessfulSub, " is the SuccessfulSub val.\n";
+			if ($SuccessfulSub == 0) {
+				$InputIsValid = 0;
+			}
+			elsif ($SuccessfulSub == 2) {
+				return 2;
+			}
+		}
+	};
+}
+
 
 # Help
 #
@@ -1484,6 +1529,9 @@ sub MenuHandler {
 			return 0;
 		}
 		$InitialMenuInput = 0;
+		# Reset Player-Win flags
+		$Player1Win = 0;
+		$Player2Win = 0;
 	}
 }
 
