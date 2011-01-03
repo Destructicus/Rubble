@@ -1308,7 +1308,18 @@ sub SelectPlayers {
 		}
 	}
 	# Write Player choices to Quick Play file
-	
+	my $SPFileOpened = open(SPFILE, ">qpfile.dat");
+	if ($SPFileOpened) {
+		my @SPLines = {};
+		$SPLines[0] = $Player1_Type."\n";
+		$SPLines[1] = $Player1_Name."\n";
+		$SPLines[2] = $Player2_Type."\n";
+		$SPLines[3] = $Player2_Name."\n";
+		print SPFILE @SPLines;
+	}
+	else {
+		print "\nFile 'qpfile.dat' not found!\n";
+	}
 }
 
 # Main
