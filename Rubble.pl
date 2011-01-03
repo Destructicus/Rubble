@@ -1005,9 +1005,9 @@ sub ClearRubble {
 	# Initialize sub variables
 	my $CR_TempString = "\$".$Attacker."_Assets{gold}";
 	my $CR_Gold = eval $CR_TempString;
-	my $CR_TempString = "\$".$Attacker."_Assets{peasants}";
+	$CR_TempString = "\$".$Attacker."_Assets{peasants}";
 	my $CR_Peasants = eval $CR_TempString;
-	my $CR_TempString = "\$".$Attacker."_Rubble";
+	$CR_TempString = "\$".$Attacker."_Rubble";
 	my $CR_Rubble = eval $CR_TempString;
 
 	# Check to see if sub needs to be run (Is there Rubble to remove?)
@@ -1208,16 +1208,43 @@ sub InitialMenu {
 		# Display Menu
 		print "\n\n\n\nWelcome to Rubble, the fiendish text-based game of adventure and high strategy.\n";
 		print "Choose from the options below.\n";
-		print " 1 - Play Rubble!\n";
-		print " 2 - How to play Rubble\n";
-		print " 3 - Inspect a player's win/loss record\n";
-		print " 4 - Exit Rubble\n";
+		print " 1 - Quick Play (Use last configuration)\n";
+		print " 2 - Play Rubble! (Pick players)\n";
+		print " 3 - How to play Rubble\n";
+		print " 4 - Inspect a player's win/loss record\n";
+		print " 5 - Exit Rubble\n";
 		# Get player input
-		print "Make your selection (1-4), followed by the <enter> key: "; 
+		print "Make your selection (1-5), followed by the <enter> key: "; 
 		$InitialMenuInput = <stdin>;
-		# $InitialMenuInput =~ s/[[:alpha:]]|[5-9]|[0]|\n//;
+		# $InitialMenuInput =~ s/[[:alpha:]]|[6-9]|[0]|\n//;
 		$InitialMenuInput =~ s/[9]//;
 		#print "\n", $InitialMenuInput, "...\n";
+	}
+}
+
+# QuickPlay
+#
+# Uses last configuration to start another game
+sub QuickPlay {
+	# Try to open quick play file
+	my $QPFileOpened = open(QPFILE, "<qpfile.dat");
+	if ($QPFileOpened) {
+		my @QPLines = <QPFILE>;
+		chomp(@QPLines);
+		$Player1_Type = $QPLines[0];
+		$Player1_Name = $QPLines[1];
+		$Player2_Type = $QPLines[2];
+		$Player2_Name = $QPLines[3];
+		print "\nFile read successful.  Players loaded:\n";
+		print "Player 1 Type: ", $Player1_Type, "\n";
+		print "Player 1 Name: ", $Player1_Name, "\n";
+		print "Player 2 Type: ", $Player2_Type, "\n";
+		print "Player 2 Name: ", $Player2_Name, "\n";
+		print "Press any key to continue.";
+		my $JunkVar = <stdin>;
+	}
+	else {
+		print "\nFile Open Error:  You must have 'qpfile.txt'\n\n";
 	}
 }
 
@@ -1280,6 +1307,8 @@ sub SelectPlayers {
 			}
 		}
 	}
+	# Write Player choices to Quick Play file
+	
 }
 
 # Main
@@ -1427,16 +1456,20 @@ sub MenuHandler {
 	while ($InitialMenuInput != 4) {
 		InitialMenu;
 		if ($InitialMenuInput == 1) {
-			SelectPlayers;
+			QuickPlay;
 			Main;
 		}
 		elsif ($InitialMenuInput == 2) {
-			Help;
+			SelectPlayers;
+			Main;
 		}
 		elsif ($InitialMenuInput == 3) {
-	
+			Help;
 		}
 		elsif ($InitialMenuInput == 4) {
+	
+		}
+		elsif ($InitialMenuInput == 5) {
 			return 0;
 		}
 		$InitialMenuInput = 0;
