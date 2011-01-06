@@ -254,7 +254,7 @@ sub TurnMenu {
 	print "\n\n\n     ** Round Number: ", $RoundCounter, " ** \n";
 	print "The weather today: ", $WeatherToday, "\n";
 	print $Message, "\n";
-	my $TM_TempString = "\$".$Attacker."_Name";
+	my $TM_TempString = "\$".$Attacker."_Name;";
 	print "King ", eval $TM_TempString, "'s Turn\n";
 	printf "%-18s%-30s%-30s\n", "Unit  ", "King ".$Player1_Name, "King ".$Player2_Name, "\n";
 	print "----------------------------------------------------------------------\n";
@@ -331,7 +331,7 @@ sub TroopAttack {
 
 	# Determine Base Intensity
 	my $TAcnt = 0;
-	$CombatIntensity = rand(50)+20;
+	$CombatIntensity = rand(40)+20;
 	$CombatIntensity = int($CombatIntensity);
 	
 	# Apply intensity modifiers.
