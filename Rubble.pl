@@ -625,32 +625,62 @@ sub HeroResultDeterminer {
 #
 # This command sends a raid to seize enemy materiel
 sub TroopRaid {
-	print "Get that stuff!\n";
+	print "My lord, we have hand-picked the best man from each unit to launch a daring\nraid on our enemy!\n";
 	my $TR_TempString = "\$".$Attacker."_Assets{heroes}";
 	my $TR_AttackerHeroes = eval $TR_TempString;
 	$TR_TempString = "\$".$Attacker."_Assets{soldiers}";
 	my $TR_AttackerSoldiers = eval $TR_TempString;
 	$TR_TempString = "\$".$Defender."_Assets{fortifications}";
 	my $TR_DefenderFortifications = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{food}";
+	my $TR_DefenderFood = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{soldiers}";
+	my $TR_DefenderSoldiers = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{peasants}";
+	my $TR_DefenderPeasants = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{guards}";
+	my $TR_DefenderGuards = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{assassins}";
+	my $TR_DefenderAssassins = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{catapults}";
+	my $TR_DefenderCatapults = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{engineers}";
+	my $TR_DefenderEngineers = eval $TR_TempString;
+	$TR_TempString = "\$".$Defender."_Assets{heroes}";
+	my $TR_DefenderHeroes = eval $TR_TempString;
 
-	if ($TR_AttackerHeroes < 1) {
-		return 0; # Cannot send raid because there are no heroes to lead it
-	}
+	# my $TR_SizeFortifications = 1;
+	# my $TR_SizeFood = ;
+	# my $TR_SizeSoldiers = eval $TR_TempString;
+	# my $TR_SizePeasants = eval $TR_TempString;
+	# my $TR_SizeGuards = eval $TR_TempString;
+	# my $TR_SizeAssassins = eval $TR_TempString;
+	# my $TR_SizeCatapults = eval $TR_TempString;
+	# my $TR_SizeEngineers = eval $TR_TempString;
 
-	# Determine number of raiding parties avaialable
-	my $TR_SoldiersAvailable = int($TR_AttackerSoldiers / 100);
-	my $TR_RaidingParties = 0;
-	if ($TR_SoldiersAvailable > $TR_AttackerHeroes) {
-		$TR_RaidingParties = $TR_AttackerHeroes;
+	my $TR_Raiders = int($TR_AttackerSoldiers / 100);
+	if ($TR_Raiders < 1) {
+		print "Sire, with our forces stretched so thin, we dare not risk even one soldier on such a mission.\n";
+		return 0; # Cannot send raid because there are too few soldiers
 	}
 	else {
-		$TR_RaidingParties = $TR_SoldiersAvailable;
+		print "The men are good to go, sire.\nThere are ", $TR_Raiders, " raiders ready.";
 	}
 	
-	print "Raiding Parties: ", $TR_RaidingParties, "\n";
-
+	my $TotalGuards = ($TR_DefenderGuards + (10 * $TR_DefenderHeroes));
+	my $FortRatio = $TR_DefenderFortifications / $TotalGuards;
+	print "Ratio is: ", $FortRatio, "\n";
+	my $RaidSuccess = 25; # Tweak this number to affect chances of getting caught on approach (i.e. bonus to small raid forces)
+	my $TRcnt = 0;
+	my $TR_SightingVar = 0;
+	for ($TRcnt = 1; $TRcnt <= $TR_Raiders; $TRcnt++) {
+		$TR_SightingVar = rand(500 - $TotalGuards);
+		print "Sightvar: ", $TR_SightingVar, " | SuccessVar: ", $RaidSuccess, "\n";
+		if ($TR_SightingVar < $RaidSuccess) {
+			print "One of our raiders was spotted: ", $TRcnt, "\n";
+		}
+	}
 	
-
 }
 
 # KillCastle
