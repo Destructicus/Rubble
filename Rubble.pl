@@ -36,14 +36,14 @@ my $SuccessfulSub = 0; # Checks the return value of subs to see if they were
 my $Trashvar = 0; # Stores garbage input from user in <pause> situations.
 my $Player2Win = 0; # Did Player 2 win?
 my $Player1Win = 0; # Did player 1 win?
-
+my $TA_AttackerOriginalStrength = 0;
 
 my $dice2 = 0;
 
-my $Attacker_SoldLoss = 0;
-my $Attacker_HeroLoss = 0;
-my $Defender_SoldLoss = 0;
-my $Defender_HeroLoss = 0;
+my $Attacker_RoundSoldLoss = 0;
+my $Attacker_RoundHeroLoss = 0;
+my $Defender_RoundSoldLoss = 0;
+my $Defender_RoundHeroLoss = 0;
 my $Loss_Val = 0;
 
 # Initialize combat variables
@@ -148,9 +148,9 @@ my $Player2_Score = 0;
 my $Player1_Score = 0;
 
 # Variable for tracking whose turn it is
-my $TurnTracker = "Player";
-my $Attacker = "Player";
-my $Defender = "Comp";
+my $TurnTracker = "Player1";
+my $Attacker = "Player1";
+my $Defender = "Player2";
 
 # Hash for storing Player Action subs
 my %ActionSubs = (
@@ -253,24 +253,26 @@ sub TurnMenu {
 	#system("cls");
 	print "\n\n\n     ** Round Number: ", $RoundCounter, " ** \n";
 	print "The weather today: ", $WeatherToday, "\n";
-	print $Message, "\n\n";
-	printf "%-18s%-30s%-30s\n", "Unit  ", "King ".$Player2_Name, "King ".$Player1_Name, "\n";
+	print $Message, "\n";
+	my $TM_TempString = "\$".$Attacker."_Name";
+	print "King ", eval $TM_TempString, "'s Turn\n";
+	printf "%-18s%-30s%-30s\n", "Unit  ", "King ".$Player1_Name, "King ".$Player2_Name, "\n";
 	print "----------------------------------------------------------------------\n";
-	printf "%-18s%-30s%-30s\n", "Soldiers: ", $Player2_Assets{soldiers},$Player1_Assets{soldiers};
-	printf "%-18s%-30s%-30s\n", "Fortifications: ", $Player2_Assets{fortifications}, $Player1_Assets{fortifications};
-	printf "%-18s%-30s%-30s\n", "Rubble: ", $Player2_Rubble, $Player1_Rubble;
-	printf "%-18s%-30s%-30s\n", "Assassins: ", $Player2_Assets{assassins}, $Player1_Assets{assassins};
-	printf "%-18s%-30s%-30s\n", "Guards: ", $Player2_Assets{guards}, $Player1_Assets{guards};
-	printf "%-18s%-30s%-30s\n", "Engineers: ", $Player2_Assets{engineers}, $Player1_Assets{engineers};
-	printf "%-18s%-30s%-30s\n", "Heroes: ", $Player2_Assets{heroes},$Player1_Assets{heroes};
-	printf "%-18s%-30s%-30s\n", "Catapults: ", $Player2_Assets{catapults}, $Player1_Assets{catapults};
-	printf "%-18s%-30s%-30s\n", "Food: ", $Player2_Assets{food}, $Player1_Assets{food};
-	printf "%-18s%-30.2f%-30.2f\n", "Food (Turns): ", FoodCalc("Player2"), FoodCalc("Player1");
-	printf "%-18s%-30s%-30s\n", "Peasants: ", $Player2_Assets{peasants}, $Player1_Assets{peasants};
-	printf "%-18s%-30s%-30s\n", "Gold: ", $Player2_Assets{gold}, $Player1_Assets{gold};
+	printf "%-18s%-30s%-30s\n", "Soldiers: ", $Player1_Assets{soldiers},$Player2_Assets{soldiers};
+	printf "%-18s%-30s%-30s\n", "Fortifications: ", $Player1_Assets{fortifications}, $Player2_Assets{fortifications};
+	printf "%-18s%-30s%-30s\n", "Rubble: ", $Player1_Rubble, $Player2_Rubble;
+	printf "%-18s%-30s%-30s\n", "Assassins: ", $Player1_Assets{assassins}, $Player2_Assets{assassins};
+	printf "%-18s%-30s%-30s\n", "Guards: ", $Player1_Assets{guards}, $Player2_Assets{guards};
+	printf "%-18s%-30s%-30s\n", "Engineers: ", $Player1_Assets{engineers}, $Player2_Assets{engineers};
+	printf "%-18s%-30s%-30s\n", "Heroes: ", $Player1_Assets{heroes},$Player2_Assets{heroes};
+	printf "%-18s%-30s%-30s\n", "Catapults: ", $Player1_Assets{catapults}, $Player2_Assets{catapults};
+	printf "%-18s%-30s%-30s\n", "Food: ", $Player1_Assets{food}, $Player2_Assets{food};
+	printf "%-18s%-30.2f%-30.2f\n", "Food (Turns): ", FoodCalc("Player1"), FoodCalc("Player2");
+	printf "%-18s%-30s%-30s\n", "Peasants: ", $Player1_Assets{peasants}, $Player2_Assets{peasants};
+	printf "%-18s%-30s%-30s\n", "Gold: ", $Player1_Assets{gold}, $Player2_Assets{gold};
 	ScoreCalc();
 	print "----------------------------------------------------------------------\n";
-#	printf "%-20s%-20s%-20s\n", "Scores: ", $Player2_Score, $Player1_Score;
+#	printf "%-20s%-20s%-20s\n", "Scores: ", $Player1_Score, $Player2_Score;
 	print "(1) Attack, (2) Raid, (3) Fire at Castle, (4) Fire at enemies,\n";
 	print "(5) Draft Soldiers, (6) Release Soldiers, (7) Buy Food, (8) Recruit Engineers,\n";
 	print "(9) Hire Guards, (10) Hire Assassins, (11) Build Fortifications,\n";
@@ -312,14 +314,25 @@ sub MotivateMessage {
 #
 sub TroopAttack {
 	# Reset variables for storing lost units
-	$Attacker_SoldLoss = 0;
-	$Attacker_HeroLoss = 0;
-	$Defender_SoldLoss = 0;
-	$Defender_HeroLoss = 0;
+	$Attacker_RoundSoldLoss = 0;
+	$Attacker_RoundHeroLoss = 0;
+	$Defender_RoundSoldLoss = 0;
+	$Defender_RoundHeroLoss = 0;
+	$TA_AttackerHLosses = 0;
+	$TA_AttackerLosses = 0;
+	$TA_DefenderHLosses = 0;
+	$TA_DefenderLosses = 0;
+	
+	# Get the attacker's original strength.  This value is used to
+	# determine if the attacker should retreat
+	$TA_AttackerOriginalStrength = 0;
+	my $TA_TempString = "\$".$Attacker."_Assets{soldiers}";
+	my $TA_AttackerOriginalStrength = eval $TA_TempString;
 
 	# Determine Base Intensity
 	my $TAcnt = 0;
 	$CombatIntensity = rand(50)+20;
+	$CombatIntensity = int($CombatIntensity);
 	
 	# Apply intensity modifiers.
 	if ($WeatherToday eq "Rainy") { $CombatIntensity = $CombatIntensity*1.3};
@@ -331,24 +344,18 @@ sub TroopAttack {
 	if ($WeatherToday eq "Foggy") { $CombatIntensity=$CombatIntensity*0.6};
 	if ($WeatherToday eq "Cool") { $CombatIntensity+=20};
 	
-	$CombatIntensity = int($CombatIntensity);
-
 	# Determine max number of rounds from array storing possible values
 	my $TA_Rounds = @PossibleRounds[int(rand(@PossibleRounds))-1];
 	
-	# Get the attacker's original strength.  This value is used to
-	# determine if the attacker should retreat
-	my $TA_AttackerOriginalStrength = 0;
-	my $TA_TempString = "\$".$Attacker."_Assets{soldiers};";
-	$TA_AttackerOriginalStrength = eval $TA_TempString;
 	if ($TA_AttackerOriginalStrength < 100) {
+		print "We have only ", $TA_AttackerOriginalStrength, " soldiers...\n";
 		print "Sire, we dare not storm the walls with so few!\n";
 		print "Press <enter> to continue.\n";
 		$Trashvar = <stdin>;
 		return 0;
 	}	
 
-	# Get the rest of the origianl strengths for attackers and defenders.
+	# Get the rest of the original strengths for attackers and defenders.
 	# These values will be displayed at the end
 	my $TA_AS = $TA_AttackerOriginalStrength;
 	$TA_TempString = "\$".$Attacker."_Assets{heroes};";
@@ -368,12 +375,15 @@ sub TroopAttack {
 
 	# Loop (rounds) or until attackers have lost half strength
 	for ($TAcnt=1; $TAcnt<=$TA_Rounds; $TAcnt++) {
+		sleep (1.0);
 		# Reset variables
-		$Attacker_SoldLoss = 0;
-		$Attacker_HeroLoss = 0;
-		$Defender_SoldLoss = 0;
-		$Defender_HeroLoss = 0;
+		$Attacker_RoundSoldLoss = 0;
+		$Attacker_RoundHeroLoss = 0;
+		$Defender_RoundSoldLoss = 0;
+		$Defender_RoundHeroLoss = 0;
 
+		my $Temp_Losses = 0;
+		
 		# Determine number of assault units of attacker
 		$TA_TempString = "\$".$Attacker."_Assets{soldiers}" ;
 		$TA_AttackerSoldiers = eval $TA_TempString;
@@ -386,7 +396,7 @@ sub TroopAttack {
 		$TA_DefenderSoldiers = eval $TA_TempString;
 		$TA_DefenderUnits = int($TA_DefenderSoldiers/100) + 1;
 		# Determine number of fortification units of defenders
-		$TA_TempString = "int(\$".$Defender."_Assets{fortifications}/1500)+1" ;
+		$TA_TempString = "int(\$".$Defender."_Assets{fortifications}/2500)-1" ;
 		$TA_DefenderWalls = eval $TA_TempString;
 
 		# Soldiers can only have one wall protecting them.
@@ -401,6 +411,13 @@ sub TroopAttack {
 		# Total offensive and defensive units
 		$TA_AttackerTotal = $TA_AttackerUnits + $TA_AttackerHeroes;
 		$TA_DefenderTotal = $TA_DefenderUnits + $TA_DefenderHeroes + $TA_DefenderWalls;
+		
+		print "\nPreparing our assault, milord, round ", $TAcnt, ".\n";
+		print "We have ", $TA_AttackerTotal, " units.  The enemy has ", $TA_DefenderTotal, " units.\nIt begins.\n\n";
+		
+		if (($TA_AttackerTotal / 2) > $TA_DefenderTotal) {
+			$CombatIntensity = int($CombatIntensity * ($TA_AttackerTotal / $TA_DefenderTotal));
+		}
 
 		# Run assault units
 		for ($TAcnt2 = 1; $TAcnt2<=$TA_AttackerUnits; $TAcnt2++) {
@@ -414,26 +431,28 @@ sub TroopAttack {
 
 		$Loss_Val = 0;
 		# Subtract Lost Attacker Soldiers
-		for ($TAcnt2 = 1; $TAcnt2<=$Attacker_SoldLoss; $TAcnt2++) {
+		for ($TAcnt2 = 1; $TAcnt2<=$Attacker_RoundSoldLoss; $TAcnt2++) {
 			$Loss_Val = int(rand($CombatIntensity)+1);
-			# print $Loss_Val, "\n";
+			if ($Loss_Val > 100) { $Loss_Val = 100; }
 			$TA_AttackerLosses+=$Loss_Val;
-
+			$Temp_Losses += $Loss_Val;
 			$TA_TempString = "\$".$Attacker."_Assets{soldiers}-=\$Loss_Val" ;
 			eval $TA_TempString;
 		}
-		print "Total Attacker Losses: ", $TA_AttackerLosses, "\n";
+		
+		print "Round ", $TAcnt, " losses:\n Attacker Soldiers lost: ", $Temp_Losses, "  Heroes lost: ", $Attacker_RoundHeroLoss, "\n";
 
 		# Subtract Lost Attacker Heroes
-		$TA_TempString = "\$".$Attacker."_Assets{heroes}-=\$Attacker_HeroLoss" ;
+		$TA_TempString = "\$".$Attacker."_Assets{heroes}-=\$Attacker_RoundHeroLoss" ;
 		eval $TA_TempString;
 
 		# Subtract Lost Defender Soldiers
-		for ($TAcnt2 = 1; $TAcnt2<=$Defender_SoldLoss; $TAcnt2++) {
+		$Temp_Losses = 0;
+		for ($TAcnt2 = 1; $TAcnt2<=$Defender_RoundSoldLoss; $TAcnt2++) {
 			$Loss_Val = int(rand($CombatIntensity)+1);
-			# print $Loss_Val, "\n";
+			if ($Loss_Val > 100) { $Loss_Val = 100; }
+			$Temp_Losses += $Loss_Val;
 			$TA_DefenderLosses+=$Loss_Val;
-
 			$TA_TempString = "\$".$Defender."_Assets{soldiers}-=\$Loss_Val" ;
 			eval $TA_TempString;
 		}
@@ -442,58 +461,73 @@ sub TroopAttack {
 		if ($TA_DefenderLosses > $TA_DS) {
 			# Calculate extra automatic hero kills
 			my $TA_HeroExtraKills = int(($TA_DefenderLosses - $TA_DS)/100);
-			print "We lost some extra heroes: ", $TA_HeroExtraKills, "\n";
 			# Set total soldier losses = original soldier value.
 			$TA_TempString = "\$".$Defender."_Assets{soldiers} = 0";
 			eval $TA_TempString;
-			$Defender_HeroLoss+=$TA_HeroExtraKills;
-			if ($Defender_HeroLoss > $TA_DH) { $Defender_HeroLoss = $TA_DH; }
+			$Defender_RoundHeroLoss+=$TA_HeroExtraKills;
+			if ($Defender_RoundHeroLoss > $TA_DH) { $Defender_RoundHeroLoss = $TA_DH; }
 			$TA_DefenderLosses = $TA_DS;
 		}
-		print "Total Defender Losses: ", $TA_DefenderLosses, "\n";
 
+		my $DefenderHeroLoss_ThisRound = 0;
 		# Subtract Lost Defender Heroes
-		$TA_TempString = "\$".$Defender."_Assets{heroes}-=\$Defender_HeroLoss" ;
+		$TA_TempString = "\$".$Defender."_Assets{heroes}";
+		$DefenderHeroLoss_ThisRound = eval $TA_TempString;
+		$TA_TempString = "\$".$Defender."_Assets{heroes}-=\$Defender_RoundHeroLoss" ;
 		eval $TA_TempString;
 		$TA_TempString = "\$".$Defender."_Assets{heroes}";
+		$DefenderHeroLoss_ThisRound -= eval $TA_TempString;
 		my $TempHeroes = eval $TA_TempString;
 		if ($TempHeroes < 1) {
 			$TA_TempString = "\$".$Defender."_Assets{heroes} = 0";
 			eval $TA_TempString;
 		}
 
+		# Clean up defender loss values and report to players
+		if ($Temp_Losses > $TA_DS) { $Temp_Losses = $TA_DS; }
+		print " Defender Soldiers lost: ", $Temp_Losses, "  Heroes lost: ", $DefenderHeroLoss_ThisRound, "\n";
+		
 		# Make sure defender doesn't lose more heroes than he has
 		if ($TA_DefenderHLosses > $TA_DH) { $TA_DefenderHLosses = $TA_DH};
 
 		# Check to see if attacker has lost more than half his force.
 		# If so, he will withdraw, unless the battle is going well
-		if (($TA_AttackerLosses > int($TA_AttackerOriginalStrength/2)) && (($TA_DefenderLosses * 1.1) < ($TA_AttackerLosses/2))) {
+		if (($TA_AttackerLosses > $TA_AS/2) && (($TA_DefenderLosses * 1.25) < ($TA_DS/2))) {
+			$TAcnt = $TA_Rounds;
+			print "Sire, we must fall back before we have no army left to defend our own walls!\n";
+			print "Press <enter> to continue.";
+			$Trashvar = <stdin>;
+		}
+	
+		# Adjust variables used for tracking overall Hero Losses
+		$TA_AttackerHLosses+=$Attacker_RoundHeroLoss;
+		$TA_DefenderHLosses+=$Defender_RoundHeroLoss;
+		
+		# Check to see if defender has been vanquished
+		if (($TA_DefenderLosses >= $TA_DS) && ($TA_DefenderHLosses >= $TA_DH)) {
 			$TAcnt = $TA_Rounds;
 		}
-
 	}
 
-	
-	# Adjust variables used for tracking overall Hero Losses
-	$TA_AttackerHLosses+=$Attacker_HeroLoss;
-	$TA_DefenderHLosses+=$Defender_HeroLoss;
 
 	# Report outcome of assault
 	# Attacker's Losses
+	print "\n------------------------------------------------\n";
+	print "Battle Results:\n";
+	print "------------------------------------------------\n";
 	printf "Sir, we attacked with %s soldiers, and %s heroes.\n", $TA_AS, $TA_AH;
 	printf "%s soldiers and %s heroes were lost.\n\n", $TA_AttackerLosses, $TA_AttackerHLosses;
 
 	# Defender's Losses
 	printf "The enemy met our assault with %s soldiers, and %s heroes.\n", $TA_DS, $TA_DH;
 	printf "%s of his soldiers and %s of his heroes will trouble us no longer.\n\n", $TA_DefenderLosses, $TA_DefenderHLosses;
-	print $Defender_HeroLoss;
 
 	# Hold for user input.
 	print "Press <enter> to continue.\n";
 	$Trashvar = <stdin>;
 	
 	# Check to see if attack was successful and castle was stormed
-	if (($TA_DS == $TA_DefenderLosses) && ($TA_DH == $TA_DefenderHLosses)) {
+	if (($TA_DS <= $TA_DefenderLosses) && ($TA_DH <= $TA_DefenderHLosses)) {
 		return 2;
 	}
 	else {
@@ -515,29 +549,30 @@ sub ResultDeterminer {
 		# Attacker encounters a soldier
 		if ($dice2 < 50) {
 			# Attacker wins
-			$Defender_SoldLoss++;
+			$Defender_RoundSoldLoss++;
 		}
 		elsif ($dice2 < 100) {
 			# Defender wins
-			$Attacker_SoldLoss++;
+			$Attacker_RoundSoldLoss++;
 		}
 	}
 	elsif ($dice <= ($TA_DefenderUnits + $TA_DefenderHeroes)) {
 		# Attacker encounters a hero 
 		if ($dice2 <= 8) {
 			# Defending Hero dies 
-			$Defender_HeroLoss++;
+			$Defender_RoundHeroLoss++;
+			print "We have slain an enemy hero!\n";
 		}
 		elsif ($dice2 < 80) {
 			# Attacking soldier dies
-			$Attacker_SoldLoss++;
+			$Attacker_RoundSoldLoss++;
 		}
 	}
 	elsif ($dice <= ($TA_DefenderUnits + $TA_DefenderHeroes + $TA_DefenderWalls)) {
 		# Attacking soldier encounters a wall
 		if ($dice2 < 30) {
 			# Attacking Soldier dies
-			$Attacker_SoldLoss++;
+			$Attacker_RoundSoldLoss++;
 		}
 	}
 }
@@ -552,29 +587,33 @@ sub HeroResultDeterminer {
 		# Attacking hero encounters a soldier
 		if ($dice2 < 50) {
 			# Attacker wins
-			$Defender_SoldLoss++;
+			$Defender_RoundSoldLoss++;
 		}
 		elsif ($dice2 < 58) {
 			# Defender wins
-			$Attacker_HeroLoss++;
+			$Attacker_RoundHeroLoss++;
+			print "One of our heroes has fallen...\n";
 		}
 	}
 	elsif ($dice <= ($TA_DefenderUnits + $TA_DefenderHeroes)) {
 		# Attacking hero encounters a hero 
 		if ($dice2 < 10) {
 			# Defending Hero dies 
-			$Defender_HeroLoss++;
+			$Defender_RoundHeroLoss++;
+			print "Huzzah, one of their heroes is slain!\n";
 		}
 		elsif ($dice2 < 20) {
 			# Attacking Hero dies
-			$Attacker_HeroLoss++;
+			$Attacker_RoundHeroLoss++;
+			print "Sire... a hero is no longer with us...\n";
 		}
 	}
 	elsif ($dice <= ($TA_DefenderUnits + $TA_DefenderHeroes + $TA_DefenderWalls)) {
 		# Attacking hero encounters a wall
 		if ($dice2 <= 1) {
 			# Attacking Hero dies
-			$Attacker_HeroLoss++;
+			$Attacker_RoundHeroLoss++;
+			print "Oh no!  One of our heroes has met with misfortune!\n";
 		}
 	}
 }
