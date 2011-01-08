@@ -771,6 +771,10 @@ sub KillCastle {
 	my $CatapultsPerWall = int (1000 * $KC_DefenderCatapults / $DefenderWalls);
 	my $PeasantsPerWall = int (1000 * $KC_DefenderPeasants / $DefenderWalls);
 
+	# Calculate chance of catapult being destroyed while firing
+	my $CatapultShatter = 10;
+	if ($WeatherToday eq "Cold") { $CatapultShatter *= 2; }
+	if ($WeatherToday eq "Freezing") { $CatapultShatter *= 3; }
 
 	# Next loop for each shot and determine damage
 	my $KC_Shots = $KC_AttackerCatapults * 3;
@@ -780,15 +784,15 @@ sub KillCastle {
 	$KC_Delay = 0.3 - ($KC_Shots - (.2 / 30));
 	if ($KC_Delay < 0.1) { $KC_Delay = 0.1; }
 	for ($KC_cnt = 0; $KC_cnt < $KC_Shots; $KC_cnt++) {
-		$KC_TargetDice = int(rand(150 + $Effectiveness));
+		$KC_TargetDice = int(rand(100 + $Effectiveness));
 		# Check to see if shot hits
-		# use Time::HiRes ( sleep );
+		use Time::HiRes qw ( sleep );
 		sleep ($KC_Delay);		
 		if ($KC_TargetDice < $Effectiveness) {
 			$KC_cnt--;
 			# Calculate whether wall is completely destroyed:
 			my $KC_WallDice = int(rand(20 + $EngineerBonus));
-			my $DamageToWall = $KC_WallDice / (20 + int(sqrt($DefenderWalls)));
+			my $DamageToWall = $KC_WallDice / (30 + int(sqrt($DefenderWalls)));
 			# printf "Amount of wall destroyed: %s\n", $DamageToWall;
 			$FortificationLosses += int($FortificationsPerWall * $DamageToWall / 300);
 			# Determine Damage to non-wall assets, which happens
@@ -990,6 +994,22 @@ sub GetEngineers {
 	$TempString = "\$".$Attacker."_Assets{gold}-=(\$EngCandidates*500)" ;
 	eval $TempString;
 
+	# Report to player
+	if ($NewEngineers > 0) {
+		print "\n\n-----------------------------------------------------------------\n";
+		print "Your majesty, some of the recruits were not up to the task.\nWe recruited ", $EngCandidates, " candidates, but only ", $NewEngineers, " completed their training.\nWe spent ", ($EngCandidates * 500), " gold on the training.\n";
+		print "-----------------------------------------------------------------\n";
+	}
+	else { 
+		print "\n\n-----------------------------------------------------------------\n";
+		print "Your majesty, despite our best efforts, we were unable to recruit any engineers.\nWe spent ", ($EngCandidates * 500), " gold on the attempt.\n";
+		print "-----------------------------------------------------------------\n";
+	}
+
+	sleep (0.8);
+
+	print "Press <enter> to continue.\n";
+	$TempString = <stdin>;
 	return 1; # Recruiting Engineers was a success
 }
 
@@ -1494,7 +1514,7 @@ sub Main {
 		# Generate Random Weather
 		RainMaker;
 		# Check to see if player is human or AI, and decide action accordingly.
-		if ($Player1_Type == "h") {
+		if ($Player1_Type eq "h") {
 			$InputIsValid = 0;
 			$Message = MotivateMessage();
 			while ($InputIsValid < 1) {
@@ -1538,7 +1558,7 @@ sub Main {
 		# Computer takes turn
 		$InputIsValid = 0;
 
-		if ($Player2_Type == "h") {
+		if ($Player2_Type eq "h") {
 			$InputIsValid = 0;
 			$Message = MotivateMessage();
 			while ($InputIsValid < 1) {
@@ -1671,7 +1691,6 @@ sub Help {
 #
 # Handles input from main menu
 sub MenuHandler {
-	print "test\n";
 	while ($InitialMenuInput != 4) {
 		InitialMenu;
 		if ($InitialMenuInput == 1) {
