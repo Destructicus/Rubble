@@ -841,6 +841,17 @@ sub KillCastle {
 	$CatapultLosses = int($CatapultLosses / 1000);
 	$EngineerLosses = int($EngineerLosses / 500);
 	
+	# Check to make sure more assets aren't being destroyed than are possessed by enemy
+	if ($PeasantLosses > $KC_DefenderPeasants) { $PeasantLosses = $KC_DefenderPeasants; }
+	if ($GuardLosses > $KC_DefenderGuards) { $GuardLosses = $KC_DefenderGuards; }
+	if ($AssassinLosses > $KC_DefenderAssassins) { $AssassinLosses = $KC_DefenderAssassins; }
+	if ($SoldierLosses > $KC_DefenderSoldiers) { $SoldierLosses = $KC_DefenderSoldiers; }
+	if ($HeroLosses > $KC_DefenderHeroes) { $HeroLosses = $KC_DefenderHeroes; }
+	if ($FortificationLosses > $KC_DefenderFortifications) { $FortificationLosses = $KC_DefenderFortifications; }
+	if ($FoodLosses > $KC_DefenderFood) { $FoodLosses = $KC_DefenderFood; }
+	if ($CatapultLosses > $KC_DefenderCatapults) { $CatapultLosses = $KC_DefenderCatapults; }
+	if ($EngineerLosses > $KC_DefenderEngineers) { $EngineerLosses = $KC_DefenderEngineers; }
+
 	print "\n BOMBARDMENT REULTS:\n";
 	print "------------------------------------------\n";
 	print "Peasants Killed: ", $PeasantLosses, "\n";
@@ -871,7 +882,6 @@ sub KillCastle {
 	if ($KC_DefenderCatapults < 1) { $KC_DefenderCatapults = 0; }
 	$KC_DefenderEngineers -= $EngineerLosses;
 	if ($KC_DefenderEngineers < 1) { $KC_DefenderEngineers = 0; }
-			
 	
 	$KC_TempString = "\$".$Defender."_Assets{soldiers} = $KC_DefenderSoldiers";
 	eval $KC_TempString;
@@ -895,6 +905,12 @@ sub KillCastle {
 	# Add Rubble
 	$KC_TempString = "\$".$Defender."_Rubble += $FortificationLosses";
 	eval $KC_TempString;
+
+	# See if enemy castle was destroyed.
+	if ($FortificationLosses == $KC_DefenderFortifications) {
+		print "\nSire!  We have reduced the enemy's castle to Rubble!  Victory is ours!\n";
+		return 2;
+	}
 
 	# Firing catapults was successful
 	return 1;
