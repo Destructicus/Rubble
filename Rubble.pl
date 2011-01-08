@@ -157,7 +157,7 @@ my %ActionSubs = (
 	1 => "TroopAttack",
 	2 => "TroopRaid",
 	3 => "KillCastle",
-	4 => "KillPeople",
+	4 => "PassTurn",
 	5 => "GetSoldiers",
 	6 => "GetPeasants",
 	7 => "GetFood",
@@ -273,7 +273,7 @@ sub TurnMenu {
 	ScoreCalc();
 	print "----------------------------------------------------------------------\n";
 #	printf "%-20s%-20s%-20s\n", "Scores: ", $Player1_Score, $Player2_Score;
-	print "(1) Attack, (2) Raid, (3) Fire at Castle, (4) Fire at enemies,\n";
+	print "(1) Attack, (2) Raid, (3) Fire at Castle, (4) Pass Turn (no action),\n";
 	print "(5) Draft Soldiers, (6) Release Soldiers, (7) Buy Food, (8) Recruit Engineers,\n";
 	print "(9) Hire Guards, (10) Hire Assassins, (11) Build Fortifications,\n";
 	print "(12) Clean up Rubble, (13) Send Assassins, (14) Buy Catapults";
@@ -618,9 +618,6 @@ sub HeroResultDeterminer {
 	}
 }
 
-
-
-
 # TroopRaid
 #
 # This command sends a raid to seize enemy materiel
@@ -648,15 +645,6 @@ sub TroopRaid {
 	my $TR_DefenderEngineers = eval $TR_TempString;
 	$TR_TempString = "\$".$Defender."_Assets{heroes}";
 	my $TR_DefenderHeroes = eval $TR_TempString;
-
-	# my $TR_SizeFortifications = 1;
-	# my $TR_SizeFood = ;
-	# my $TR_SizeSoldiers = eval $TR_TempString;
-	# my $TR_SizePeasants = eval $TR_TempString;
-	# my $TR_SizeGuards = eval $TR_TempString;
-	# my $TR_SizeAssassins = eval $TR_TempString;
-	# my $TR_SizeCatapults = eval $TR_TempString;
-	# my $TR_SizeEngineers = eval $TR_TempString;
 
 	my $TR_Raiders = int($TR_AttackerSoldiers / 100);
 	if ($TR_Raiders < 1) {
@@ -746,28 +734,27 @@ sub KillCastle {
 	# First Roll for effectiveness of bombardment (effectiveness = potential damage/shot)
 	my $Effectiveness = 0;
 	my $BaseEffectiveness = 20;
-	my $WeatherEffectiveness = 0;
-	my $EngineerBonus = (3 * log($KC_AttackerEngineers));
+	my $EngineerBonus = int($KC_AttackerEngineers ** .7);
 	print "\nEngineer Bonus: ", $EngineerBonus, "\n";
 	
 	# Effectiveness is the number that a roll must beat to hit the target
-	$Effectiveness = int(rand($BaseEffectiveness) + $EngineerBonus);
+	$Effectiveness = int($BaseEffectiveness + $EngineerBonus);
 	print "Effectiveness before weather: ", $Effectiveness, "\n";
 	# Determine weather bonuses
 	if ($WeatherToday eq "Windy") {
-		$Effectiveness = int($Effectiveness/3);
+		$Effectiveness = int($Effectiveness/1.5);
 	}
 	elsif ($WeatherToday eq "Rainy") {
-		$Effectiveness = int($Effectiveness/2);
+		$Effectiveness = int($Effectiveness/1.1);
 	}
 	elsif ($WeatherToday eq "Mild") {
-		$Effectiveness += 5;
+		$Effectiveness *= 2;
 	}
 	elsif ($WeatherToday eq "Cold") {
-		$Effectiveness -= 2;
+		$Effectiveness -= 10;
 	}
-	if ($Effectiveness < 1) { 
-		$Effectiveness = 1; 
+	if ($Effectiveness < 3) { 
+		$Effectiveness = 3; 
 	}
 	print "Effectiveness post-weather: ", $Effectiveness, "\n";
 
@@ -793,16 +780,15 @@ sub KillCastle {
 	$KC_Delay = 0.3 - ($KC_Shots - (.2 / 30));
 	if ($KC_Delay < 0.1) { $KC_Delay = 0.1; }
 	for ($KC_cnt = 0; $KC_cnt < $KC_Shots; $KC_cnt++) {
-		$KC_TargetDice = int(rand(50) + 1);
+		$KC_TargetDice = int(rand(150 + $Effectiveness));
 		# Check to see if shot hits
-		use Time::HiRes qw ( sleep );
+		# use Time::HiRes ( sleep );
 		sleep ($KC_Delay);		
 		if ($KC_TargetDice < $Effectiveness) {
 			$KC_cnt--;
-			# if ($KC_cnt < 0) { $KC_cnt = 0; }
 			# Calculate whether wall is completely destroyed:
-			my $KC_WallDice = int(rand(50 + $EngineerBonus));
-			my $DamageToWall = $KC_WallDice / (30 + int(sqrt($DefenderWalls)));
+			my $KC_WallDice = int(rand(20 + $EngineerBonus));
+			my $DamageToWall = $KC_WallDice / (20 + int(sqrt($DefenderWalls)));
 			# printf "Amount of wall destroyed: %s\n", $DamageToWall;
 			$FortificationLosses += int($FortificationsPerWall * $DamageToWall / 300);
 			# Determine Damage to non-wall assets, which happens
@@ -902,15 +888,20 @@ sub KillCastle {
 	$KC_TempString = "\$".$Defender."_Assets{engineers} = $KC_DefenderEngineers";
 	eval $KC_TempString;
 	
+	# Add Rubble
+	$KC_TempString = "\$".$Defender."_Rubble += $FortificationLosses";
+	eval $KC_TempString;
+
 	# Firing catapults was successful
 	return 1;
 }
 
-# KillPeople
+# PassTurn
 #
-# This command fires catapults at the enemy's people.
-sub KillPeople {
-
+# This sub passes your turn
+sub PassTurn {
+	print "\n\nYes, sire, sometimes discretion is the better part of valor.\n";
+	return 1;
 } 
 
 # GetSoldiers
@@ -979,7 +970,7 @@ sub GetEngineers {
 	my $EngCandidates = eval $TempString;
 	
 		# Generate success rate
-	my $SuccessVal = int(rand(100)+30);
+	my $SuccessVal = int(rand(100)+50);
 	my $NewEngineers = 0;
 	my $dice2 = 0;
 	
@@ -1086,11 +1077,79 @@ sub ClearRubble {
 	}
 
 	# Peasants work first round for free
-	my $CR_PeasantSuccess = (int(rand(30) + 10) / 500);
+	my $CR_PeasantSuccess = (int(rand(10) + 10) / 500);
 	# print "\nPeasantSuccess = ", $CR_PeasantSuccess, "\n";
-	my $CR_RubbleRemoved = $CR_PeasantSuccess * $CR_Peasants;
-	if ($CR_RubbleRemoved > $CR_Rubble) {}
+	my $CR_RubbleRemoved = int($CR_PeasantSuccess * $CR_Peasants);
+	if ($CR_RubbleRemoved > $CR_Rubble) {
+		$CR_RubbleRemoved = $CR_Rubble;
+	}
+
+	my $CR_TotalRubbleRemoved = 0;
+	$CR_TotalRubbleRemoved += $CR_RubbleRemoved;
 	
+	
+	print "\n\n---------------------------------------------------------------------\n";
+	
+	# Report peasant success
+	if ($CR_RubbleRemoved > 0) {
+		print "Your peasants pitch in out of love and respect for your grace!\nThey have cleared ", $CR_RubbleRemoved, " units of Rubble.\n";
+	}
+	else {
+		print "The worthless louts were unable to clear *any* Rubble!";
+	}
+
+	# Remove Free Peasant-Cleared Rubble
+	$CR_TempString = "\$".$Attacker."_Rubble -= $CR_RubbleRemoved";
+	eval $CR_TempString;
+	$CR_Rubble -= $CR_RubbleRemoved;
+	
+	my $CR_PaidRounds = 0;
+	my $CR_RoundCost = $CR_Peasants;
+	my $CR_TotalCost = 0;
+	my $CR_EnoughFunds = 1;
+	if ($CR_Rubble > $CR_RubbleRemoved) {
+		print "---------------------------------------------------------------------\n";
+		print "Their backs aching, the peasants have lost the will to work for free.\nWe now must pay them if we want their help.\n";
+		while (($CR_Rubble > 0) && ($CR_EnoughFunds == 1)) {
+			if ($CR_RoundCost < $CR_Gold) {		
+				$CR_PaidRounds++;
+				$CR_TotalCost += $CR_RoundCost;
+				# Subtract Cost for Round
+				$CR_TempString = "\$".$Attacker."_Assets{gold} -= $CR_RoundCost";
+				eval $CR_TempString;
+				$CR_Gold -= $CR_RoundCost;
+
+				# Calculate Rubble cleared
+				$CR_PeasantSuccess = (int(rand(10) + 10) / 500);
+				$CR_RubbleRemoved = int($CR_PeasantSuccess * $CR_Peasants);
+				if ($CR_RubbleRemoved > $CR_Rubble) {
+					$CR_RubbleRemoved = $CR_Rubble;
+				}
+
+				# Clear Rubble
+				$CR_TotalRubbleRemoved += $CR_RubbleRemoved;
+				$CR_Rubble -= $CR_RubbleRemoved;
+				my $CR_TempString = "\$".$Attacker."_Rubble -= $CR_RubbleRemoved";
+				eval $CR_TempString;
+
+				# Report rubble cleared
+				print "For ", $CR_RoundCost, " gold, the peasants cleared ", $CR_RubbleRemoved, " Rubble.\n";
+			}
+			else {
+				print "Unfortunately, we have run out of funds, milord.\n";
+				$CR_EnoughFunds = 0;
+			}
+			$CR_RoundCost *= 1.2;
+			$CR_RoundCost = int($CR_RoundCost);
+		}
+		if ($CR_PaidRounds > 0) {
+			print "---------------------------------------------------------------------\n";
+			print "In total, we paid the peasants ", $CR_TotalCost, " gold to remove ", $CR_TotalRubbleRemoved, " Rubble.\n\n";
+		}
+	}
+	
+	# Indicate that sub was able to run successfully
+	return 1;
 }
 
 # SendAssassins
@@ -1226,8 +1285,12 @@ sub Extern {
 	my $GoldIncrease = $TempPeasants;
 	my $Costs =  ($TempSoldiers + (10 * $TempAssassins) + (10 * $TempGuards));
 	my $Desertions = 0;
+
 	# Make sure player has enough gold to cover costs
 	if (($GoldIncrease + $TempGold) < $Costs) {
+		print "Costs: ", $Costs, "\n";
+		print "Taxes: ", $GoldIncrease, "\n";
+		print "Previous Balance: ", $TempGold, "\n";
 		$Desertions = int(rand(($Costs - ($GoldIncrease + $TempGold)) * 2/3));
 		$GoldIncrease = ($TempGold * -1);
 	}
@@ -1235,25 +1298,44 @@ sub Extern {
 		$GoldIncrease = $GoldIncrease - $Costs;
 	}
 	
-
 	# Calculate Food Consumption
 	my $FoodDecrease = $TempPeasants + $TempSoldiers + $TempAssassins + $TempGuards + $TempEngineers + $TempHeroes;
 
-	# Apply changes
-	$TempString = "\$".$TempPlayer."_Assets{peasants}+=$PeasantIncrease";
+	# Calculate Plague Chance
+	my $PlagueChance = int(100 * $TempRubble / ($TempRubble + $TempFortifications));
+	my $PlagueBool = 0;
+	my $PlagueDice = int(rand(100));
+	my $PeasantDeaths = 0;
+	my $SoldierDeaths = 0;
+	if ($PlagueDice < $PlagueChance) {
+		$PlagueBool = 1;	
+		print "-----------------------------------------\n";
+		print "Sire!  We are experiencing a plague!\nWe must clean the castle of debris and garbage at once!\n";
+		print "-----------------------------------------\n";
+		$PeasantDeaths = int($TempPeasants * .15);
+		$SoldierDeaths = int($TempSoldiers * .12);
+	}
 
-	# TODO Calculate Plague Chance
 
+	# Decrease Rubble
+	my $AutoRubble = 0;
+	$AutoRubble = int((rand(3) + 1) * ($TempEngineers ^ 1.5));
+	if ($AutoRubble > $TempRubble) {
+		$AutoRubble = $TempRubble;
+	}
+
+	# Report to player
 	print "\n King ", $Attacker, "'s";
 	print " State of the Kingdom:\n";
 	print "-----------------------------------------\n";
 	eval $TempString;
-	# TODO Give plague warning and apply plague values
+	# Apply changes
+	$TempString = "\$".$TempPlayer."_Assets{peasants}+=$PeasantIncrease";
 	print "Gained Peasants: ", $PeasantIncrease, "\n";
+	eval $TempString;
 	$TempString = "\$".$TempPlayer."_Assets{fortifications}+=$WallIncrease";
 	eval $TempString;
 	print "Gained Fortifications: ", $WallIncrease, "\n";
-	# TODO Decrease Rubble
 	$TempString = "\$".$TempPlayer."_Assets{food}-=$FoodDecrease";
 	eval $TempString;
 	print "Ate food: ", $FoodDecrease, "\n";
@@ -1263,6 +1345,17 @@ sub Extern {
 	$TempString = "\$".$TempPlayer."_Assets{soldiers}-=$Desertions";
 	eval $TempString;
 	print "Soldiers deserted: ", $Desertions, "\n";
+	print "Rubble cleared: ", $AutoRubble, "\n";
+	$TempString = "\$".$TempPlayer."_Rubble -= $AutoRubble";
+	eval $TempString;
+	if ($PlagueBool == 1) {
+		$TempString = "\$".$TempPlayer."_Assets{peasants} -= $PeasantDeaths";
+		eval $TempString;
+		$TempString = "\$".$TempPlayer."_Assets{soldiers} -= $SoldierDeaths";
+		eval $TempString;
+		print $PeasantDeaths, " of our people have died from the plague.\n";
+		print $SoldierDeaths, " of our soldiers also succumbed to the plague.\n";
+	}
 
 	# Wait for user input to continue
 	print "Press <enter> to continue...\n";
@@ -1310,7 +1403,7 @@ sub QuickPlay {
 		print "Player 1 Name: ", $Player1_Name, "\n";
 		print "Player 2 Type: ", $Player2_Type, "\n";
 		print "Player 2 Name: ", $Player2_Name, "\n";
-		print "Press any key to continue.";
+		print "Press <enter> to continue.";
 		my $JunkVar = <stdin>;
 	}
 	else {
@@ -1578,6 +1671,7 @@ sub Help {
 #
 # Handles input from main menu
 sub MenuHandler {
+	print "test\n";
 	while ($InitialMenuInput != 4) {
 		InitialMenu;
 		if ($InitialMenuInput == 1) {
@@ -1618,13 +1712,7 @@ print "\n\nThanks for playing Rubble!\n";
 #  Finish Help File
 #  Fix Player 2 is always Human
 #  Implement external AI files
-#  Add rubble creation
-#  Add plague from Rubble
 #  Add assassin mini-game
-#  Add engineer Rubble removal
 #  Add hero Generation
-#  Add raid mini-game
 #  Fix Hero Loss display during attacks
-#  Add "Clean up Rubble" option
-#  Add "Fire at People" minigame
- 
+#  Finish Raid implementation
